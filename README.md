@@ -2,6 +2,7 @@
 
 In this project the idea is to provide a secure communication between client and Mosquitto broker using SSL/TLS to [this project](https://github.com/BenedettoSimone/SmartCity-Arduino).
 
+
 ## Prerequisites
 * [OpenSSL](https://www.openssl.org);
 
@@ -14,43 +15,50 @@ The system consists of several sensors, connected to an Arduino board, which sen
 Create the Root CA is the first step to enable secure SSL/TLS communication. Once the RootCA has been created, it will be possible to use it to authenticate the Mosquitto broker's certificate.
 
 1. Open the terminal and go to the folder where you want to create the Root CA.
-2. Use the following command to create a configuration file for OpenSSL:
-
-    ```bash
-    nano openssl.cnf
-    ```
+2. Use the following command to create a configuration file for OpenSSL. _The following procedure will have to be repeated twice, because we need two different configurations (one for the rootCA and one for the server). We have used the following name for the second file ``openssl-s.cnf``._
+         
+   ```
+   nano openssl-ca.cnf
+   ```
+       
+   Insert the following template in the file ``openssl-ca.cnf``:
+   ```bash
+   [ req ]
+   prompt             = no
+   default_bits       = 2048
+   default_md         = sha256
+   distinguished_name = dn
     
-    Insert the following template in the file ``openssl.cnf``:
-    
+   [ dn ]
+   C  = IT
+   ST = State
+   L  = City
+   O  = Organization Name
+   OU = Organizational Unit Name
+   CN = Common Name (e.g. localhost, IP address)
+   emailAddress = Email Address
+   ```
+   This template defines some useful parameters for the creation of the certificate, such as the number of bits of the key, the hashing algorithm used and distinctive data such as the country, state, city, organization name and common name of the certificate. 
+   <br><br>
+   It's important that ``Organization Name`` and ``Organization Unit Name`` are different in the two files.
+
+       
+
+3. Save the two files and then proceed to create the private key. 
+
+4. Use the following command to generate a 2048-bit private key for the Root CA (Make sure you are in the same directory where you saved the `openssl-ca.cnf` file). The key will be protected by a passphrase.
     ```bash
-    [ req ]
-    prompt             = no
-    default_bits       = 2048
-    default_md         = sha256
-    distinguished_name = dn
-    
-    [ dn ]
-    C  = IT
-    ST = State
-    L  = City
-    O  = Organization Name
-    CN = Common Name (e.g. your name or your server's hostname)
-    ```
-    This template defines some useful parameters for the creation of the certificate, such as the number of bits of the key, the hashing algorithm used and distinctive data such as the country, state, city, organisation name and common name of the certificate. 
-
-
-3. Save the `openssl.cnf` file and then proceed to create the private key. 
-
-4. Use the following command to generate a 2048-bit private key for the Root CA (Make sure you are in the same directory where you saved the `openssl.cnf` file).
-    ```bash
-    openssl genrsa -out rootCA.key 2048
+    openssl genrsa -des3 -out rootCA.key 2048
     ```
 5. Use the following command to create the Root CA certificate:
 
     ```bash
-    openssl req -new -x509 -key rootCA.key -out rootCA.crt -config openssl.cnf
+    openssl req -new -x509 -key rootCA.key -days 365 -out rootCA.crt -config openssl-ca.cnf
     ```
     This command will create a ``rootCA.crt`` file in your folder, containing the Root CA certificate.
+
+
+
 
 
 # 2. Create certificate for the broker
@@ -67,25 +75,40 @@ Now, you need to create a certificate for the Mosquitto broker and configure the
 2. Create a certificate request file (CSR) for the Mosquitto broker with the command:
 
    ```
-   openssl req -new -key broker.key -out broker.csr -config openssl.cnf
+   openssl req -new -key broker.key -out broker.csr -config openssl-s.cnf
    ```
 
 3. Sign the CSR with our Root CA to generate the Mosquitto broker's certificate with the command:
 
    ```
-   openssl x509 -req -in broker.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out broker.crt -days 3650 -sha256
+   openssl x509 -req -in broker.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out broker.crt -days 3650
    ```
 
-4. Configure the Mosquitto broker to use the signed certificate by adding these lines in the broker's configuration file `mosquitto.conf`:
+4. Configure the Mosquitto broker to use the signed certificate by adding these lines (absolute path) in the broker's configuration file `mosquitto.conf`:
 
    ```
+   listener 8883
+   allow_anonymous true
    cafile /path/to/rootCA.crt
    certfile /path/to/broker.crt
    keyfile /path/to/broker.key
    ```
-   _NB: it's needed to change the listener port to `8333` in the broker configuration._
 
+# 3. Check if everything is working properly
+Before proceeding with sending the messages from the Arduino we will simulate the client to check if all the procedure carried out previously is correct.
 
+1. Start the broker. On macOS, you can use the following command.
+   ```
+   /usr/local/sbin/mosquitto -v -c /usr/local/etc/mosquitto/mosquitto.conf
+   ```
+2. Subscribe to a test topic. In this command you need to replace the rootCA path and the hostname. 
+   ```
+   mosquitto_sub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test
+   ```
+3. Publish a test message on a test topic. In this command you need to replace the rootCA path and the hostname.
+   ```
+   mosquitto_pub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test -m "Test message"
+   ```
 
 
 ## Developed by
