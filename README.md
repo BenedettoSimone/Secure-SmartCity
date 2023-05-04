@@ -10,7 +10,7 @@ In this project the idea is to provide a secure communication between client and
 <p align="center"><img src="./images/architecture.jpg"/></p>
 The system consists of several sensors, connected to an Arduino board, which send information to a Mosquitto broker using the MQTT protocol. The broker then sends this information to a Dashboard built with Node-RED. 
 
-**Security aspects:**
+**SECURITY ASPECTS:**
 * Both clients are authenticated with username and password;
 * Certificates and keys were created for the Mosquitto broker only.
 
@@ -102,17 +102,23 @@ Now, you need to create a certificate for the Mosquitto broker and configure the
 Before proceeding with sending the messages from the Arduino we will simulate the client to check if all the procedure carried out previously is correct.
 
 1. Start the broker. On macOS, you can use the following command.
+   
    ```
    /usr/local/sbin/mosquitto -v -c /usr/local/etc/mosquitto/mosquitto.conf
    ```
+   
 2. Subscribe to a test topic. In this command you need to replace the rootCA path and the hostname. 
+   
    ```
    mosquitto_sub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test
    ```
+   
 3. Publish a test message on a test topic. In this command you need to replace the rootCA path and the hostname.
+   
    ```
    mosquitto_pub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test -m "Test message" -u arduino -P benedetto
    ```
+   
 # Username and password authentication
 To add an extra layer of security, the broker can be configured to require client authentication via a valid username and password before allowing the connection. Since we are using SSL/TLS, username and password will be encrypted during transmission.
 
