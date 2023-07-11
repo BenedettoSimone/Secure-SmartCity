@@ -6,11 +6,12 @@ In this project the idea is to provide a secure communication between client and
 ## Prerequisites
 * [OpenSSL](https://www.openssl.org);
 
+
 ## Architecture
 <p align="center"><img src="./images/architecture.jpg"/></p>
 The system consists of several sensors, connected to an Arduino board, which send information to a Mosquitto broker using the MQTT protocol. The broker then sends this information to a Dashboard built with Node-RED. 
 
-**SECURITY ASPECTS:**
+**SECURITY FEATURES:**
 * Both clients are authenticated with username and password;
 * Certificates and keys were created for the Mosquitto broker only.
 
@@ -85,44 +86,41 @@ Now, you need to create a certificate for the Mosquitto broker and configure the
 3. Sign the CSR with our Root CA to generate the Mosquitto broker's certificate with the command:
 
    ```
-   openssl x509 -req -in broker.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out broker.crt -days 3650
+   openssl x509 -req -in broker.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out broker.crt -days 3650 -sha256
    ```
 
-4. Configure the Mosquitto broker to use the signed certificate by adding these lines (absolute path) in the broker's configuration file `mosquitto.conf`:
+4. After generating all the files, copy `rootCA.crt`, `broker.crt` and `broker.key` to the RaspberryPi. The following commands were used to copy the certificates into Mosquitto's `certs` folder.
+   
+   ```
+   sudo cp /home/labiot/Desktop/cryptomat/broker.key /etc/mosquitto/certs/
+   sudo cp /home/labiot/Desktop/cryptomat/broker.crt /etc/mosquitto/certs/
+   sudo cp /home/labiot/Desktop/cryptomat/rootCA.crt /etc/mosquitto/certs/
+   ```
 
+5. Configure the Mosquitto broker to use the signed certificate by adding these lines (absolute path) in the broker's configuration file `mosquitto.conf`:
+   
+   ```
+   sudo /etc/init.d/mosquitto stop
+   sudo nano /etc/mosquitto/mosquitto.conf
+   ```
+   
    ```
    listener 8883
    allow_anonymous true
-   cafile /path/to/rootCA.crt
-   certfile /path/to/broker.crt
-   keyfile /path/to/broker.key
+   cafile /etc/mosquitto/certs/rootCA.crt
+   certfile /etc/mosquitto/certs/broker.crt
+   keyfile /etc/mosquitto/certs/broker.key
+   ```
+   ```
+   sudo service mosquitto start
    ```
 
-# Check if everything is working properly
-Before proceeding with sending the messages from the Arduino we will simulate the client to check if all the procedure carried out previously is correct.
 
-1. Start the broker. On macOS, you can use the following command.
-   
-   ```
-   /usr/local/sbin/mosquitto -v -c /usr/local/etc/mosquitto/mosquitto.conf
-   ```
-   
-2. Subscribe to a test topic. In this command you need to replace the rootCA path and the hostname. 
-   
-   ```
-   mosquitto_sub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test
-   ```
-   
-3. Publish a test message on a test topic. In this command you need to replace the rootCA path and the hostname.
-   
-   ```
-   mosquitto_pub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test -m "Test message" -u arduino -P benedetto
-   ```
    
 # Username and password authentication
 To add an extra layer of security, the broker can be configured to require client authentication via a valid username and password before allowing the connection. Since we are using SSL/TLS, username and password will be encrypted during transmission.
 
-1. Create the password file and the new user with the following command. Then enter the password.
+1. Create the password file and the new user with the following command. Then enter the password. (We created two users, arduino_client and node_red)
    ```
    mosquitto_passwd -c passwordfile <username>
    ```
@@ -131,20 +129,39 @@ To add an extra layer of security, the broker can be configured to require clien
    mosquitto_passwd -b passwordfile <username> <password>
    ```
 
-2. Copy the `passwordfile` in the Mosquitto folder (/etc/mosquitto on macOS) and modify the `mosquitto.conf` adding the following lines.
+2. Copy the `passwordfile` in the Mosquitto folder and modify the `mosquitto.conf` adding the following lines.
+   
+   ```
+   sudo cp /home/labiot/Desktop/cryptomat/passwordfile /etc/mosquitto/
+   ```
+   ```
+   sudo /etc/init.d/mosquitto stop
+   sudo nano /etc/mosquitto/mosquitto.conf
+   ```
    ```
    allow_anonymous false
-   password_file /path/to/passwordfile
+   password_file /etc/mosquitto/passwordfile
    ```
 
-3. Check if everything is working properly. Remember to set the username and password. 
+# Configure NodeRed
+1. Access to `http://localhost:1880` and modify the configuration of the broker node changing the port to `8883` and setting the use of `TLS`.
+2. Set username and password for NodeRed client.
+3. Deploy and check the connection of each node.
+
+<p align="center"><img src="./images/node_red.png"/></p>
+
+
+# Check if everything is working properly
+Before proceeding with sending the messages from the Arduino we will simulate the client with our pc to check if all the procedure carried out previously is correct.
+
+
+1. Publish a test message on the `street_lights` topic. In this command you need to replace the rootCA path, the hostname and the password.
+
    ```
-   mosquitto_sub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test -u <username> -P <password>
+   mosquitto_pub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h 192.168.1.121 -t topic/street_lights -m "Test message" -u arduino_client -P <pwd>
    ```
-   ```
-   mosquitto_pub --cafile /Users/benedettosimone/Desktop/cryptoMat/rootCA.crt -h localhost -t topic/test -m "Test message" -u <username> -P <password>
-   ```
-   
+
+# Arduino client
 
 ## Developed by
 [Simone Benedetto](https://github.com/BenedettoSimone)<br>

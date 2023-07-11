@@ -1,17 +1,17 @@
 #include "LedControl.h"
 #include <WiFiNINA.h>
 #include <PubSubClient.h>
-#include <WiFiClientSecure.h>
 #include <Servo.h>
 
 
-const char* ssid = "";
-const char* password = "";
 
-const char* mqtt_server = "";
+const char* ssid = "WiFi-LabIoT";
+const char* password = "s1jzsjkw5b";
+
+const char* mqtt_server = "192.168.1.121";
 const int mqtt_port = 8883; //default 1833
-const char* mqtt_user = "";
-const char* mqtt_password = "";
+const char* mqtt_user = "arduino_client";
+const char* mqtt_password = "arduino_pwd";
 
 const char *topic_lights = "topic/street_lights";
 const char *topic_air = "topic/air_quality";
@@ -24,13 +24,7 @@ String lightsMessage = "";
 String airMessage = "";
 String floodMessage = "";
 
-
-const char* root_ca = "-----BEGIN CERTIFICATE-----\n"
-                      "Insert certificate content here\n"
-                      "-----END CERTIFICATE-----\n";
-
-
-WiFiClientSecure rev2Client; // WiFi client
+WiFiSSLClient rev2Client; // WiFi client
 
 PubSubClient client(rev2Client); //MQTT client
 
@@ -122,8 +116,6 @@ void setup() {
 
   // MQTT connection
   Serial.println();
-
-  wifiClient.setCACert(root_ca);
   mqttClient.setServer(mqtt_server, mqtt_port);
   mqttClient.setCredentials(mqtt_user, mqtt_password);
 
