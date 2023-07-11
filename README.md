@@ -163,8 +163,14 @@ Before proceeding with sending the messages from the Arduino we will simulate th
 
 # Arduino client
 In order to use certificates on any board equipped with NINA Wi-Fi module, we used [arduino-fwuploader](https://arduino.github.io/arduino-fwuploader/2.2/) to flash the certificate using the following command.
+
+1. Convert the `rootCA.crt` in `.pem` format.
   ```
-  ./arduino-fwuploader certificates flash -f rootCA.crt -b arduino:megaavr:uno2018 -a <port>
+   openssl x509 -in rootCA.crt -out rootCA.pem
+  ```
+2. Flash the certificates. Replace your arduino-fwuploader path and the rootCA path.
+  ```
+   /Users/benedettosimone/Downloads/arduino-fwuploader_2.2.2_macOS_64bit/arduino-fwuploader certificates flash --url arduino.cc:443,google.com:443 -f /Users/benedettosimone/Desktop/cryptoMat/rootCA.pem -b arduino:megaavr:uno2018 -a /dev/cu.usbmodem14102
    ```
 
 ## Developed by

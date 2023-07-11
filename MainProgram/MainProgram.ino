@@ -6,12 +6,12 @@
 
 
 const char* ssid = "WiFi-LabIoT";
-const char* password = "s1jzsjkw5b";
+const char* password = "";
 
 const char* mqtt_server = "192.168.1.121";
 const int mqtt_port = 8883; //default 1833
 const char* mqtt_user = "arduino_client";
-const char* mqtt_password = "arduino_pwd";
+const char* mqtt_password = "";
 
 const char *topic_lights = "topic/street_lights";
 const char *topic_air = "topic/air_quality";
@@ -116,9 +116,7 @@ void setup() {
 
   // MQTT connection
   Serial.println();
-  mqttClient.setServer(mqtt_server, mqtt_port);
-  mqttClient.setCredentials(mqtt_user, mqtt_password);
-
+  client.setServer(mqtt_server, mqtt_port);
 
   if (!client.connected()) {
     reconnect();
@@ -386,14 +384,14 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("...");
     // Attempt to connect
-    if (client.connect("REV2")) {
-    Serial.println();
-    Serial.println("Connected to the mosquitto Broker.");
+    if (client.connect("REV2", mqtt_user, mqtt_password)) {
+        Serial.println();
+        Serial.println("Connected to the mosquitto Broker.");
     } else {
-    Serial.print("failed, rc=");
-    Serial.print(client.state());
-    Serial.println("Try again in 5 seconds.");
-    delay(5000);
+        Serial.print("failed, rc=");
+        Serial.print(client.state());
+        Serial.println("Try again in 5 seconds.");
+        delay(5000);
     }
   }
 }
