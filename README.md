@@ -162,6 +162,10 @@ Before proceeding with sending the messages from the Arduino we will simulate th
    ```
 
 # Arduino client
+In order to use certificates on any board equipped with NINA Wi-Fi module, we used [arduino-fwuploader](https://arduino.github.io/arduino-fwuploader/2.2/) to flash the certificate using the following command.
+  ```
+  ./arduino-fwuploader certificates flash -f rootCA.crt -b arduino:megaavr:uno2018 -a <port>
+   ```
 
 ## Developed by
 [Simone Benedetto](https://github.com/BenedettoSimone)<br>
